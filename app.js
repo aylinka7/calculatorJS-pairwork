@@ -2,7 +2,7 @@ const ops = {
     "+": (a, b) => a + b,
     "-": (a, b) => a - b,
     "*": (a, b) => a * b,
-    "/": (a, b) => b === 0 ? NaN : a / b
+    "/": (a, b) => b === 0 ? "Cannot divide by zero": a / b
 };
 
 const precedence = {
@@ -62,3 +62,31 @@ function evaluateRPN(rpn) {
     }
     return stack[0];
 }
+
+const display = document.getElementById("display");
+let expression = "";
+
+document.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const val = btn.textContent;
+
+        if (val === "AC") {
+            expression = "";
+            display.textContent = "0";
+        } else if (val === "=") {
+            try {
+                const tokens = expression.match(/\d+(\.\d+)?|[+\-*/()]/g);
+                const rpn = convert(tokens);
+                const result = evaluateRPN(rpn);
+                display.textContent = result;
+                expression = result.toString();
+            } catch {
+                display.textContent = "Error";
+                expression = "";
+            }
+        } else {
+            expression += val;
+            display.textContent = expression;
+        }
+    });
+});
