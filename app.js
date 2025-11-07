@@ -104,3 +104,30 @@ document.querySelectorAll("button").forEach(btn => {
         }
     });
 });
+
+document.addEventListener("keydown", (e) => {
+    const key = e.key;
+
+    if (/[\d+\-*/().]/.test(key)) {
+        expression += key;
+        display.textContent = expression;
+    } else if (key === "Enter" || key === "=") {
+        try {
+            const tokens = expression.match(/\d+(\.\d+)?|[+\-*/()]/g);
+            const rpn = convert(tokens);
+            const result = evaluateRPN(rpn);
+            display.textContent = result;
+            expression = result.toString();
+        } catch {
+            display.textContent = "Error";
+            expression = "";
+        }
+    } else if (key === "Backspace") {
+        expression = expression.slice(0, -1);
+        display.textContent = expression || "0";
+    } else if (key.toLowerCase() === "c") {
+        expression = "";
+        display.textContent = "0";
+    }
+});
+
