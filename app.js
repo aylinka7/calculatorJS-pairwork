@@ -19,10 +19,24 @@ function convert(tokens) {
     const output = [];
     const stack = [];
 
-    for (const token of tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+        const token = tokens[i];
+
         if (!isNaN(token)) {
             output.push(token);
         } else if (isOperator(token)) {
+            const prev = tokens[i - 1];
+            if (
+                token === "-" &&
+                (i === 0 || (isOperator(prev) || prev === "("))
+            ) {
+                const next = tokens[i + 1];
+                if (!isNaN(next)) {
+                    output.push("-" + next);
+                    i++;
+                    continue;
+                }
+            }
             while (
                 stack.length &&
                 isOperator(stack.at(-1)) &&
