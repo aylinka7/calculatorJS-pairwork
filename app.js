@@ -99,7 +99,7 @@ function evaluateRPN(rpn) {
 }
 
 // =============================================
-// NEW: Format number with commas
+// Number formatting with commas
 // =============================================
 function formatNumber(num) {
     if (Number.isInteger(num)) {
@@ -110,28 +110,36 @@ function formatNumber(num) {
     return dec ? `${intFormatted}.${dec}` : intFormatted;
 }
 
-// =============================================
-// DOM Elements & State
-// =============================================
-const display = document.getElementById("display");
-let expression = "";
-let isHistoryVisible = false;
+// Replace commas when parsing (for calculation)
+function removeCommas(str) {
+    return str.replace(/,/g, '');
+}
 
-// =============================================
-// Update Display (with comma formatting)
-// =============================================
-function updateDisplay() {
-    const trimmed = expression.trim();
-    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
-        const num = parseFloat(trimmed);
-        display.textContent = formatNumber(num);
-    } else {
-        display.textContent = trimmed || "0";
-    }
+// Format expression: keep commas in numbers, leave operators alone
+function formatExpression(expr) {
+    return expr.replace(/-?\d{4,}(?:\.\d+)?/g, match => {
+        const num = parseFloat(removeCommas(match));
+        return formatNumber(num);
+    });
 }
 
 // =============================================
-// Toggle History Panel
+// State
+// =============================================
+const display = document.getElementById("display");
+let expression = "";        // raw input (no commas)
+let displayExpr = "0";      // what user sees (with commas)
+let isHistoryVisible = false;
+
+// =============================================
+// Update Display
+// =============================================
+function updateDisplay() {
+    display.textContent = displayExpr;
+}
+
+// =============================================
+// Toggle History
 // =============================================
 function toggleHistory() {
     const historyDiv = document.getElementById("history");
@@ -145,7 +153,7 @@ function toggleHistory() {
 }
 
 // =============================================
-// Button Click Handlers
+// Button Handlers
 // =============================================
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -156,30 +164,51 @@ document.querySelectorAll("button").forEach(btn => {
         let val = btn.textContent;
         if (val === "×") val = "*";
         if (val === "−") val = "-";
-        if (val === "AC") { expression = ""; updateDisplay(); return; }
-        if (val === "←") { expression = expression.slice(0, -1); updateDisplay(); return; }
-        if (val === "=") { evaluateAndShow(); return; }
+        if (val === "AC") { 
+            expression = ""; 
+            displayExpr = "0"; 
+            updateDisplay(); 
+            return; 
+        }
+        if (val === "←") { 
+            expression = expression.slice(0, -1); 
+            // Re-format display after backspace
+            displayExpr = expression ? formatExpression(expression) : "0";
+            updateDisplay(); 
+            return; 
+        }
+        if (val === "=") { 
+            evaluateAndShow(); 
+            return; 
+        }
         if (val === "±") {
             const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
             if (match) {
                 const num = match[0];
-                if (num.startsWith("-")) expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
-                else expression = expression.slice(0, -num.length) + "-" + num;
+                if (num.startsWith("-")) {
+                    expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
+                } else {
+                    expression = expression.slice(0, -num.length) + "-" + num;
+                }
+                displayExpr = formatExpression(expression);
                 updateDisplay();
             }
             return;
         }
+
+        // Append raw value
         expression += val;
+        displayExpr = formatExpression(expression);
         updateDisplay();
     });
 });
 
 // =============================================
-// Evaluate Expression & Show Result
+// Evaluate & Show Result
 // =============================================
 function evaluateAndShow() {
     try {
-        // Insert implicit multiplication: 2(3) → 2*(3), 3√4 → 3*√4
+        // Insert implicit multiplication
         let preExpr = expression
             .replace(/(\d|\))√/g, "$1*√")
             .replace(/(\d|\))\(/g, "$1*(");
@@ -193,26 +222,26 @@ function evaluateAndShow() {
 
         if (!isFinite(result)) throw new Error("Invalid result");
 
-        // Format result with commas
         const formattedResult = formatNumber(result);
         display.textContent = formattedResult;
 
-        // Add to history with formatted result
+        // History: show original (with commas) = result
         const historyDiv = document.getElementById("history");
         const entry = document.createElement("p");
-        entry.textContent = `${expression} = ${formattedResult}`;
+        entry.textContent = `${displayExpr} = ${formattedResult}`;
         historyDiv.appendChild(entry);
 
-        // Limit history to last 10 entries
         while (historyDiv.children.length > 10) {
             historyDiv.removeChild(historyDiv.firstChild);
         }
 
-        // Keep raw value for further calculations
+        // Reset for next calc
         expression = result.toString();
+        displayExpr = formattedResult;
     } catch (err) {
         display.textContent = "Error";
         expression = "";
+        displayExpr = "0";
         console.error(err.message);
     }
 }
@@ -222,18 +251,37 @@ function evaluateAndShow() {
 // =============================================
 document.addEventListener("keydown", (e) => {
     const key = e.key;
-    if (/^[0-9]$/.test(key)) { expression += key; updateDisplay(); return; }
-    if (["+", "-", "*", "/", "(", ")", "^", ".", "%"].includes(key)) { expression += key; updateDisplay(); return; }
+    if (/^[0-9]$/.test(key)) { 
+        expression += key; 
+        displayExpr = formatExpression(expression);
+        updateDisplay(); 
+        return; 
+    }
+    if (["+", "-", "*", "/", "(", ")", "^", ".", "%"].includes(key)) { 
+        expression += key; 
+        displayExpr = formatExpression(expression);
+        updateDisplay(); 
+        return; 
+    }
     if (key === "Enter" || key === "=") { evaluateAndShow(); return; }
-    if (key === "Backspace") { expression = expression.slice(0, -1); updateDisplay(); return; }
-    if (key.toLowerCase() === "c") { expression = ""; updateDisplay(); return; }
-    if (key === "r") { expression += "√"; updateDisplay(); return; }
+    if (key === "Backspace") { 
+        expression = expression.slice(0, -1); 
+        displayExpr = expression ? formatExpression(expression) : "0";
+        updateDisplay(); 
+        return; 
+    }
+    if (key.toLowerCase() === "c") { expression = ""; displayExpr = "0"; updateDisplay(); return; }
+    if (key === "r") { expression += "√"; displayExpr = formatExpression(expression); updateDisplay(); return; }
     if (key === "m") {
         const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
         if (match) {
             const num = match[0];
-            if (num.startsWith("-")) expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
-            else expression = expression.slice(0, -num.length) + "-" + num;
+            if (num.startsWith("-")) {
+                expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
+            } else {
+                expression = expression.slice(0, -num.length) + "-" + num;
+            }
+            displayExpr = formatExpression(expression);
             updateDisplay();
         }
         return;
