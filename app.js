@@ -96,7 +96,7 @@ function toggleHistory() {
     historyDiv.style.display = isHistoryVisible ? 'block' : 'none';
     histBtn.textContent = isHistoryVisible ? 'Hide' : 'History';
     if (isHistoryVisible && historyDiv.firstChild) {
-        historyDiv.scrollTop = historyDiv.scrollHeight; // Scroll to bottom to show newest entries
+        historyDiv.scrollTop = historyDiv.scrollHeight;
     }
 }
 
@@ -138,6 +138,9 @@ function evaluateAndShow() {
         const entry = document.createElement("p");
         entry.textContent = `${expression} = ${result}`;
         historyDiv.appendChild(entry);
+        while (historyDiv.children.length > 10) {
+            historyDiv.removeChild(historyDiv.firstChild);
+        }
         expression = result.toString();
     } catch { display.textContent = "Error"; expression = ""; }
 }
