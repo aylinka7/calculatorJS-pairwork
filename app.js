@@ -2,7 +2,10 @@ const ops = {
     "+": (a, b) => a + b,
     "-": (a, b) => a - b,
     "*": (a, b) => a * b,
-    "/": (a, b) => b === 0 ? NaN : a / b
+    "/": (a, b) => {
+        if (b === 0) throw new Error("Division by zero");
+        return a / b;
+    }
 };
 
 const precedence = {
@@ -67,17 +70,29 @@ function evaluateRPN(rpn) {
     for (let i = 0; i < rpn.length; i++) {
         const token = rpn[i];
         if (!isNaN(token)) { stack.push(parseFloat(token)); continue; }
-        if (token === "√") { const a = stack.pop(); stack.push(Math.sqrt(a)); continue; }
+        if (token === "√") { 
+            const a = stack.pop(); 
+            if (a < 0) throw new Error("Square root of negative");
+            stack.push(Math.sqrt(a)); 
+            continue; 
+        }
         const b = stack.pop();
         const a = stack.pop();
         switch (token) {
             case "+": stack.push(a + b); break;
             case "-": stack.push(a - b); break;
             case "*": stack.push(a * b); break;
-            case "/": stack.push(b === 0 ? NaN : a / b); break;
+            case "/": 
+                if (b === 0) throw new Error("Division by zero");
+                stack.push(a / b); 
+                break;
             case "^": stack.push(Math.pow(a, b)); break;
-            case "%": if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); else if (b !== undefined) stack.push(b / 100); else stack.push(NaN); break;
-            default: stack.push(NaN);
+            case "%": 
+                if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); 
+                else if (b !== undefined) stack.push(b / 100); 
+                else throw new Error("Invalid %");
+                break;
+            default: throw new Error("Unknown operator");
         }
     }
     return stack[0];
@@ -87,7 +102,9 @@ const display = document.getElementById("display");
 let expression = "";
 let isHistoryVisible = false;
 
-function updateDisplay() { display.textContent = expression || "0"; }
+function updateDisplay() { 
+    display.textContent = expression || "0"; 
+}
 
 function toggleHistory() {
     const historyDiv = document.getElementById("history");
@@ -95,7 +112,7 @@ function toggleHistory() {
     isHistoryVisible = !isHistoryVisible;
     historyDiv.style.display = isHistoryVisible ? 'block' : 'none';
     histBtn.textContent = isHistoryVisible ? 'Hide' : 'History';
-    if (isHistoryVisible && historyDiv.firstChild) {
+    if (isHistoryVisible) {
         historyDiv.scrollTop = historyDiv.scrollHeight;
     }
 }
@@ -129,21 +146,37 @@ document.querySelectorAll("button").forEach(btn => {
 
 function evaluateAndShow() {
     try {
-        expression = expression.replace(/(\d|\))\(/g, "$1*(");
-        const pre = expandPercents(expression);
+        // Insert implicit multiplication: 2(3) → 2*(3), 3√4 → 3*√4
+        let preExpr = expression
+            .replace(/(\d|\))√/g, "$1*√")
+            .replace(/(\d|\))\(/g, "$1*(");
+
+        const pre = expandPercents(preExpr);
         const tokens = pre.match(/\d+(\.\d+)?|√|[+\-*/^%()]/g);
+        if (!tokens) throw new Error("Invalid expression");
+
         const rpn = convert(tokens);
         const result = evaluateRPN(rpn);
+
+        if (!isFinite(result)) throw new Error("Invalid result");
+
         display.textContent = result;
         const historyDiv = document.getElementById("history");
         const entry = document.createElement("p");
         entry.textContent = `${expression} = ${result}`;
         historyDiv.appendChild(entry);
+
+        // Limit history to last 10 entries
         while (historyDiv.children.length > 10) {
             historyDiv.removeChild(historyDiv.firstChild);
         }
+
         expression = result.toString();
-    } catch { display.textContent = "Error"; expression = ""; }
+    } catch (err) {
+        display.textContent = "Error";
+        expression = "";
+        console.error(err.message);
+    }
 }
 
 document.addEventListener("keydown", (e) => {
