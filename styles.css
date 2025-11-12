@@ -1,0 +1,82 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: #202124;
+    color: white;
+    font-family: sans-serif;
+}
+
+.calculator {
+    background: #2e2f33;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(255,255,255,0.1);
+}
+
+/* ----- DISPLAY & HISTORY ----- */
+#display {
+    background: #000;
+    color: #00ff90;
+    padding: 12px;
+    font-size: 2em;
+    border-radius: 8px;
+    text-align: right;
+    margin-bottom: 10px;
+    min-width: 300px;
+}
+#history {
+    background: #000;
+    color: #fff;
+    padding: 8px;
+    font-size: 0.9em;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    max-height: 120px;
+    overflow-y: auto;
+    display: none;
+    text-align: right;
+}
+#history p { 
+    margin: 4px 0; 
+    padding: 2px 4px;
+    border-bottom: 1px solid #333;
+}
+
+/* ----- BUTTON GRID ----- */
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(5, 60px);
+    gap: 10px;
+}
+
+/* ----- BUTTON STYLES ----- */
+button {
+    border: none;
+    color: white;
+    font-size: 1.2em;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 15px;
+    transition: background 0.2s, opacity 0.2s;
+}
+
+/* colour groups */
+button.num      { background: #3a3b3f; }
+button.op       { background: #f06000; }   /* / × − + = */
+button.func     { background: #56575b; }   /* √ ^ % . AC ← ± */
+button.paren    { background: #56575b; }
+button.equals   { background: #1a73e8; }
+button.hist     { background: #8ab4f8; font-weight: bold; }
+button.backspace { background: #ff5252; }   /* red for delete */
+
+/* hover */
+button:hover { opacity: 0.85; }
+
+/* wide buttons */
+button.wide { grid-column: span 2; }
+
+/* make empty cell invisible */
+button.func:empty { background: transparent; pointer-events: none; }

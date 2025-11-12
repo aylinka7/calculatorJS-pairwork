@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RPN Calculator</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="calculator">
+    <div id="history"></div>
+    <div id="display">0</div>
+
+    <div class="buttons">
+        <!-- Row 1: ( ) AC DE / -->
+        <button class="paren">(</button>
+        <button class="paren">)</button>
+        <button class="func">AC</button>
+        <button class="backspace">←</button>
+        <button class="op">/</button>
+
+        <!-- Row 2: √ 7 8 9 × -->
+        <button class="func">√</button>
+        <button class="num">7</button>
+        <button class="num">8</button>
+        <button class="num">9</button>
+        <button class="op">×</button>
+
+        <!-- Row 3: ^ 4 5 6 − -->
+        <button class="func">^</button>
+        <button class="num">4</button>
+        <button class="num">5</button>
+        <button class="num">6</button>
+        <button class="op">−</button>
+
+        <!-- Row 4: % 1 2 3 + -->
+        <button class="func">%</button>
+        <button class="num">1</button>
+        <button class="num">2</button>
+        <button class="num">3</button>
+        <button class="op">+</button>
+
+        <!-- Row 5: 0 ± . = (removed 1/x, shifted) -->
+        <button class="num" style="grid-column:span 2;">0</button>
+        <button class="func">±</button>
+        <button class="func">.</button>
+        <button class="equals">=</button>
+
+        <!-- Row 6: History (full width) -->
+        <button class="hist wide" style="grid-column:1 / -1;">History</button>
+    </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
