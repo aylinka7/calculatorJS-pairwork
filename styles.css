@@ -60,7 +60,7 @@ button {
     border-radius: 8px;
     cursor: pointer;
     padding: 15px;
-    transition: background 0.2s, opacity 0.2s;
+    transition: background 0.2s, opacity 0.2s, transform 0.1s;   /* added transform */
 }
 
 /* colour groups */
@@ -72,11 +72,29 @@ button.equals   { background: #1a73e8; }
 button.hist     { background: #8ab4f8; font-weight: bold; }
 button.backspace { background: #ff5252; }   /* red for delete */
 
-/* hover */
+/* ---------- HOVER (color change) ---------- */
+button.num:hover      { background: #4a4b4f; }
+button.op:hover       { background: #ff7010; }
+button.func:hover,
+button.paren:hover    { background: #66676b; }
+button.equals:hover   { background: #1a85ff; }
+button.hist:hover     { background: #9ac4ff; }
+button.backspace:hover{ background: #ff7070; }
+
+/* keep the old opacity fallback for any button that doesn't get a specific hover */
 button:hover { opacity: 0.85; }
+
+/* ---------- ACTIVE (shrink on click) ---------- */
+button:active {
+    transform: scale(0.93);   /* shrinks a little */
+    transition: transform 0.05s;   /* fast snap back */
+}
 
 /* wide buttons */
 button.wide { grid-column: span 2; }
 
 /* make empty cell invisible */
-button.func:empty { background: transparent; pointer-events: none; }
+button.func:empty { 
+    background: transparent; 
+    pointer-events: none; 
+}

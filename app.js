@@ -2,7 +2,10 @@ const ops = {
     "+": (a, b) => a + b,
     "-": (a, b) => a - b,
     "*": (a, b) => a * b,
-    "/": (a, b) => b === 0 ? NaN : a / b
+    "/": (a, b) => {
+        if (b === 0) throw new Error("Division by zero");
+        return a / b;
+    }
 };
 
 const precedence = {
@@ -67,39 +70,91 @@ function evaluateRPN(rpn) {
     for (let i = 0; i < rpn.length; i++) {
         const token = rpn[i];
         if (!isNaN(token)) { stack.push(parseFloat(token)); continue; }
-        if (token === "√") { const a = stack.pop(); stack.push(Math.sqrt(a)); continue; }
+        if (token === "√") { 
+            const a = stack.pop(); 
+            if (a < 0) throw new Error("Square root of negative");
+            stack.push(Math.sqrt(a)); 
+            continue; 
+        }
         const b = stack.pop();
         const a = stack.pop();
         switch (token) {
             case "+": stack.push(a + b); break;
             case "-": stack.push(a - b); break;
             case "*": stack.push(a * b); break;
-            case "/": stack.push(b === 0 ? NaN : a / b); break;
+            case "/": 
+                if (b === 0) throw new Error("Division by zero");
+                stack.push(a / b); 
+                break;
             case "^": stack.push(Math.pow(a, b)); break;
-            case "%": if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); else if (b !== undefined) stack.push(b / 100); else stack.push(NaN); break;
-            default: stack.push(NaN);
+            case "%": 
+                if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); 
+                else if (b !== undefined) stack.push(b / 100); 
+                else throw new Error("Invalid %");
+                break;
+            default: throw new Error("Unknown operator");
         }
     }
     return stack[0];
 }
 
+// =============================================
+// Number formatting with commas
+// =============================================
+function formatNumber(num) {
+    if (Number.isInteger(num)) {
+        return num.toLocaleString('en-US');
+    }
+    const [int, dec] = num.toString().split('.');
+    const intFormatted = parseInt(int, 10).toLocaleString('en-US');
+    return dec ? `${intFormatted}.${dec}` : intFormatted;
+}
+
+// Replace commas when parsing (for calculation)
+function removeCommas(str) {
+    return str.replace(/,/g, '');
+}
+
+// Format expression: keep commas in numbers, leave operators alone
+function formatExpression(expr) {
+    return expr.replace(/-?\d{4,}(?:\.\d+)?/g, match => {
+        const num = parseFloat(removeCommas(match));
+        return formatNumber(num);
+    });
+}
+
+// =============================================
+// State
+// =============================================
 const display = document.getElementById("display");
-let expression = "";
+let expression = "";        // raw input (no commas)
+let displayExpr = "0";      // what user sees (with commas)
 let isHistoryVisible = false;
 
-function updateDisplay() { display.textContent = expression || "0"; }
+// =============================================
+// Update Display
+// =============================================
+function updateDisplay() {
+    display.textContent = displayExpr;
+}
 
+// =============================================
+// Toggle History
+// =============================================
 function toggleHistory() {
     const historyDiv = document.getElementById("history");
     const histBtn = document.querySelector(".hist");
     isHistoryVisible = !isHistoryVisible;
     historyDiv.style.display = isHistoryVisible ? 'block' : 'none';
     histBtn.textContent = isHistoryVisible ? 'Hide' : 'History';
-    if (isHistoryVisible && historyDiv.firstChild) {
+    if (isHistoryVisible) {
         historyDiv.scrollTop = historyDiv.scrollHeight;
     }
 }
 
+// =============================================
+// Button Handlers
+// =============================================
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
         if (btn.classList.contains('hist')) {
@@ -109,56 +164,124 @@ document.querySelectorAll("button").forEach(btn => {
         let val = btn.textContent;
         if (val === "×") val = "*";
         if (val === "−") val = "-";
-        if (val === "AC") { expression = ""; updateDisplay(); return; }
-        if (val === "←") { expression = expression.slice(0, -1); updateDisplay(); return; }
-        if (val === "=") { evaluateAndShow(); return; }
+        if (val === "AC") { 
+            expression = ""; 
+            displayExpr = "0"; 
+            updateDisplay(); 
+            return; 
+        }
+        if (val === "←") { 
+            expression = expression.slice(0, -1); 
+            // Re-format display after backspace
+            displayExpr = expression ? formatExpression(expression) : "0";
+            updateDisplay(); 
+            return; 
+        }
+        if (val === "=") { 
+            evaluateAndShow(); 
+            return; 
+        }
         if (val === "±") {
             const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
             if (match) {
                 const num = match[0];
-                if (num.startsWith("-")) expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
-                else expression = expression.slice(0, -num.length) + "-" + num;
+                if (num.startsWith("-")) {
+                    expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
+                } else {
+                    expression = expression.slice(0, -num.length) + "-" + num;
+                }
+                displayExpr = formatExpression(expression);
                 updateDisplay();
             }
             return;
         }
+
+        // Append raw value
         expression += val;
+        displayExpr = formatExpression(expression);
         updateDisplay();
     });
 });
 
+// =============================================
+// Evaluate & Show Result
+// =============================================
 function evaluateAndShow() {
     try {
-        const pre = expandPercents(expression);
+        // Insert implicit multiplication
+        let preExpr = expression
+            .replace(/(\d|\))√/g, "$1*√")
+            .replace(/(\d|\))\(/g, "$1*(");
+
+        const pre = expandPercents(preExpr);
         const tokens = pre.match(/\d+(\.\d+)?|√|[+\-*/^%()]/g);
+        if (!tokens) throw new Error("Invalid expression");
+
         const rpn = convert(tokens);
         const result = evaluateRPN(rpn);
-        display.textContent = result;
+
+        if (!isFinite(result)) throw new Error("Invalid result");
+
+        const formattedResult = formatNumber(result);
+        display.textContent = formattedResult;
+
+        // History: show original (with commas) = result
         const historyDiv = document.getElementById("history");
         const entry = document.createElement("p");
-        entry.textContent = `${expression} = ${result}`;
+        entry.textContent = `${displayExpr} = ${formattedResult}`;
         historyDiv.appendChild(entry);
+
         while (historyDiv.children.length > 10) {
             historyDiv.removeChild(historyDiv.firstChild);
         }
+
+        // Reset for next calc
         expression = result.toString();
-    } catch { display.textContent = "Error"; expression = ""; }
+        displayExpr = formattedResult;
+    } catch (err) {
+        display.textContent = "Error";
+        expression = "";
+        displayExpr = "0";
+        console.error(err.message);
+    }
 }
 
+// =============================================
+// Keyboard Support
+// =============================================
 document.addEventListener("keydown", (e) => {
     const key = e.key;
-    if (/^[0-9]$/.test(key)) { expression += key; updateDisplay(); return; }
-    if (["+", "-", "*", "/", "(", ")", "^", ".", "%"].includes(key)) { expression += key; updateDisplay(); return; }
+    if (/^[0-9]$/.test(key)) { 
+        expression += key; 
+        displayExpr = formatExpression(expression);
+        updateDisplay(); 
+        return; 
+    }
+    if (["+", "-", "*", "/", "(", ")", "^", ".", "%"].includes(key)) { 
+        expression += key; 
+        displayExpr = formatExpression(expression);
+        updateDisplay(); 
+        return; 
+    }
     if (key === "Enter" || key === "=") { evaluateAndShow(); return; }
-    if (key === "Backspace") { expression = expression.slice(0, -1); updateDisplay(); return; }
-    if (key.toLowerCase() === "c") { expression = ""; updateDisplay(); return; }
-    if (key === "r") { expression += "√("; updateDisplay(); return; }
+    if (key === "Backspace") { 
+        expression = expression.slice(0, -1); 
+        displayExpr = expression ? formatExpression(expression) : "0";
+        updateDisplay(); 
+        return; 
+    }
+    if (key.toLowerCase() === "c") { expression = ""; displayExpr = "0"; updateDisplay(); return; }
+    if (key === "r") { expression += "√"; displayExpr = formatExpression(expression); updateDisplay(); return; }
     if (key === "m") {
         const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
         if (match) {
             const num = match[0];
-            if (num.startsWith("-")) expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
-            else expression = expression.slice(0, -num.length) + "-" + num;
+            if (num.startsWith("-")) {
+                expression = expression.slice(0, -num.length) + num.replace(/^-/, "");
+            } else {
+                expression = expression.slice(0, -num.length) + "-" + num;
+            }
+            displayExpr = formatExpression(expression);
             updateDisplay();
         }
         return;
