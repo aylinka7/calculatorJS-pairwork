@@ -37,8 +37,13 @@ body {
     max-height: 120px;
     overflow-y: auto;
     display: none;
+    text-align: right;
 }
-#history p { margin: 4px 0; }
+#history p { 
+    margin: 4px 0; 
+    padding: 2px 4px;
+    border-bottom: 1px solid #333;
+}
 
 /* ----- BUTTON GRID ----- */
 .buttons {

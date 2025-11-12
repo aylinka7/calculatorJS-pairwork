@@ -11,11 +11,12 @@ const precedence = {
     "*": 2,
     "/": 2,
     "^": 4,
-    "%": 3
+    "%": 3,
+    "√": 5
 };
 
 function isOperator(ch) {
-    return ["+", "-", "*", "/", "^", "%"].includes(ch);
+    return ["+", "-", "*", "/", "^", "%", "√"].includes(ch);
 }
 
 function expandPercents(expr) {
@@ -84,17 +85,33 @@ function evaluateRPN(rpn) {
 
 const display = document.getElementById("display");
 let expression = "";
+let isHistoryVisible = false;
+
 function updateDisplay() { display.textContent = expression || "0"; }
+
+function toggleHistory() {
+    const historyDiv = document.getElementById("history");
+    const histBtn = document.querySelector(".hist");
+    isHistoryVisible = !isHistoryVisible;
+    historyDiv.style.display = isHistoryVisible ? 'block' : 'none';
+    histBtn.textContent = isHistoryVisible ? 'Hide' : 'History';
+    if (isHistoryVisible && historyDiv.firstChild) {
+        historyDiv.scrollTop = historyDiv.scrollHeight; // Scroll to bottom to show newest entries
+    }
+}
 
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
+        if (btn.classList.contains('hist')) {
+            toggleHistory();
+            return;
+        }
         let val = btn.textContent;
         if (val === "×") val = "*";
         if (val === "−") val = "-";
         if (val === "AC") { expression = ""; updateDisplay(); return; }
         if (val === "←") { expression = expression.slice(0, -1); updateDisplay(); return; }
         if (val === "=") { evaluateAndShow(); return; }
-        if (val === "History") { alert(document.getElementById("history").innerText || "History is empty"); return; }
         if (val === "±") {
             const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
             if (match) {
@@ -118,9 +135,9 @@ function evaluateAndShow() {
         const result = evaluateRPN(rpn);
         display.textContent = result;
         const historyDiv = document.getElementById("history");
-        const entry = document.createElement("div");
+        const entry = document.createElement("p");
         entry.textContent = `${expression} = ${result}`;
-        historyDiv.prepend(entry);
+        historyDiv.appendChild(entry);
         expression = result.toString();
     } catch { display.textContent = "Error"; expression = ""; }
 }
@@ -143,5 +160,5 @@ document.addEventListener("keydown", (e) => {
         }
         return;
     }
-    if (key === "h") { alert(document.getElementById("history").innerText || "History is empty"); }
+    if (key === "h") { toggleHistory(); }
 });
