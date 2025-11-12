@@ -129,6 +129,7 @@ document.querySelectorAll("button").forEach(btn => {
 
 function evaluateAndShow() {
     try {
+        expression = expression.replace(/(\d|\))\(/g, "$1*(");
         const pre = expandPercents(expression);
         const tokens = pre.match(/\d+(\.\d+)?|√|[+\-*/^%()]/g);
         const rpn = convert(tokens);
@@ -152,7 +153,7 @@ document.addEventListener("keydown", (e) => {
     if (key === "Enter" || key === "=") { evaluateAndShow(); return; }
     if (key === "Backspace") { expression = expression.slice(0, -1); updateDisplay(); return; }
     if (key.toLowerCase() === "c") { expression = ""; updateDisplay(); return; }
-    if (key === "r") { expression += "√("; updateDisplay(); return; }
+    if (key === "r") { expression += "√"; updateDisplay(); return; }
     if (key === "m") {
         const match = expression.match(/(\(*-?\d+(\.\d+)?\)*)$/);
         if (match) {
