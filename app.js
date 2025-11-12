@@ -78,21 +78,29 @@ function evaluateRPN(rpn) {
         }
         const b = stack.pop();
         const a = stack.pop();
-        switch (token) {
-            case "+": stack.push(a + b); break;
-            case "-": stack.push(a - b); break;
-            case "*": stack.push(a * b); break;
-            case "/": 
-                if (b === 0) throw new Error("Division by zero");
-                stack.push(a / b); 
-                break;
-            case "^": stack.push(Math.pow(a, b)); break;
-            case "%": 
-                if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); 
-                else if (b !== undefined) stack.push(b / 100); 
-                else throw new Error("Invalid %");
-                break;
-            default: throw new Error("Unknown operator");
+
+        try {
+            switch (token) {
+                case "+": stack.push(a + b); break;
+                case "-": stack.push(a - b); break;
+                case "*": stack.push(a * b); break;
+                case "/": 
+                    if (b === 0) throw new Error("Division by zero");
+                    stack.push(a / b); 
+                    break;
+                case "^": stack.push(Math.pow(a, b)); break;
+                case "%": 
+                    if (a !== undefined && b !== undefined) stack.push(a * (b / 100)); 
+                    else if (b !== undefined) stack.push(b / 100); 
+                    else throw new Error("Invalid %");
+                    break;
+                default: throw new Error("Unknown operator");
+            }
+        } catch (e) {
+            if (e.message === "Division by zero") {
+                throw new Error("Can't divide by zero");  // Friendly message
+            }
+            throw e;
         }
     }
     return stack[0];
@@ -170,9 +178,8 @@ document.querySelectorAll("button").forEach(btn => {
             updateDisplay(); 
             return; 
         }
-        if (val === "←") { 
+        if (val === "Backspace") { 
             expression = expression.slice(0, -1); 
-            // Re-format display after backspace
             displayExpr = expression ? formatExpression(expression) : "0";
             updateDisplay(); 
             return; 
@@ -239,7 +246,11 @@ function evaluateAndShow() {
         expression = result.toString();
         displayExpr = formattedResult;
     } catch (err) {
-        display.textContent = "Error";
+        if (err.message === "Can't divide by zero") {
+            display.textContent = "Can’t divide by zero";
+        } else {
+            display.textContent = "Error";
+        }
         expression = "";
         displayExpr = "0";
         console.error(err.message);
