@@ -98,14 +98,41 @@ function evaluateRPN(rpn) {
     return stack[0];
 }
 
+// =============================================
+// NEW: Format number with commas
+// =============================================
+function formatNumber(num) {
+    if (Number.isInteger(num)) {
+        return num.toLocaleString('en-US');
+    }
+    const [int, dec] = num.toString().split('.');
+    const intFormatted = parseInt(int, 10).toLocaleString('en-US');
+    return dec ? `${intFormatted}.${dec}` : intFormatted;
+}
+
+// =============================================
+// DOM Elements & State
+// =============================================
 const display = document.getElementById("display");
 let expression = "";
 let isHistoryVisible = false;
 
-function updateDisplay() { 
-    display.textContent = expression || "0"; 
+// =============================================
+// Update Display (with comma formatting)
+// =============================================
+function updateDisplay() {
+    const trimmed = expression.trim();
+    if (/^-?\d+(\.\d+)?$/.test(trimmed)) {
+        const num = parseFloat(trimmed);
+        display.textContent = formatNumber(num);
+    } else {
+        display.textContent = trimmed || "0";
+    }
 }
 
+// =============================================
+// Toggle History Panel
+// =============================================
 function toggleHistory() {
     const historyDiv = document.getElementById("history");
     const histBtn = document.querySelector(".hist");
@@ -117,6 +144,9 @@ function toggleHistory() {
     }
 }
 
+// =============================================
+// Button Click Handlers
+// =============================================
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
         if (btn.classList.contains('hist')) {
@@ -144,6 +174,9 @@ document.querySelectorAll("button").forEach(btn => {
     });
 });
 
+// =============================================
+// Evaluate Expression & Show Result
+// =============================================
 function evaluateAndShow() {
     try {
         // Insert implicit multiplication: 2(3) → 2*(3), 3√4 → 3*√4
@@ -160,10 +193,14 @@ function evaluateAndShow() {
 
         if (!isFinite(result)) throw new Error("Invalid result");
 
-        display.textContent = result;
+        // Format result with commas
+        const formattedResult = formatNumber(result);
+        display.textContent = formattedResult;
+
+        // Add to history with formatted result
         const historyDiv = document.getElementById("history");
         const entry = document.createElement("p");
-        entry.textContent = `${expression} = ${result}`;
+        entry.textContent = `${expression} = ${formattedResult}`;
         historyDiv.appendChild(entry);
 
         // Limit history to last 10 entries
@@ -171,6 +208,7 @@ function evaluateAndShow() {
             historyDiv.removeChild(historyDiv.firstChild);
         }
 
+        // Keep raw value for further calculations
         expression = result.toString();
     } catch (err) {
         display.textContent = "Error";
@@ -179,6 +217,9 @@ function evaluateAndShow() {
     }
 }
 
+// =============================================
+// Keyboard Support
+// =============================================
 document.addEventListener("keydown", (e) => {
     const key = e.key;
     if (/^[0-9]$/.test(key)) { expression += key; updateDisplay(); return; }
