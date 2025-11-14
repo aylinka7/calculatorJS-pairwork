@@ -2,6 +2,9 @@
 
 ## Project Overview
 This is a **web-based calculator** implemented in JavaScript. It supports basic arithmetic operations, percentages, powers, square roots, and a **history of the last 10 calculations**. The calculator handles **keyboard input** as well as button clicks, making it easy and intuitive to use.
+<img width="604" height="729" alt="image" src="https://github.com/user-attachments/assets/64addb54-d3ab-4dcd-a055-c1433d3a9770" />
+<img width="628" height="878" alt="image" src="https://github.com/user-attachments/assets/018caa70-3d2f-4d13-89c6-ffe4a4056c48" />
+
 
 ---
 
